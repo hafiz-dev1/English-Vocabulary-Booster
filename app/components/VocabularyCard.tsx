@@ -1,14 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { Vocabulary } from "../data/vocabulary";
 
 interface VocabularyCardProps {
   item: Vocabulary;
   showExamples: boolean;
   showSpeaker: boolean;
+  showTranslation: boolean;
 }
 
-export default function VocabularyCard({ item, showExamples, showSpeaker }: VocabularyCardProps) {
+export default function VocabularyCard({ item, showExamples, showSpeaker, showTranslation }: VocabularyCardProps) {
+  const [isRevealed, setIsRevealed] = useState(false);
+
   const speak = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-US";
@@ -19,8 +23,8 @@ export default function VocabularyCard({ item, showExamples, showSpeaker }: Voca
     <div className="group relative bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 md:p-6 hover:shadow-xl hover:border-blue-500/30 dark:hover:border-blue-500/30 transition-all duration-300 flex flex-col h-full">
       {/* Main Content: Word, Controls, Translation */}
       <div className="flex-1 flex justify-between items-center gap-4 mb-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-xl md:text-2xl font-normal uppercase text-zinc-800 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors font-samsung">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg md:text-xl font-normal uppercase text-zinc-800 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors font-samsung">
             {item.word}
           </h2>
           
@@ -28,14 +32,14 @@ export default function VocabularyCard({ item, showExamples, showSpeaker }: Voca
             {showSpeaker && (
               <button
                 onClick={() => speak(item.word)}
-                className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                className="text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
                 aria-label="Listen to pronunciation"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
-                  strokeWidth={1.5}
+                  strokeWidth={2}
                   stroke="currentColor"
                   className="w-5 h-5"
                 >
@@ -55,15 +59,34 @@ export default function VocabularyCard({ item, showExamples, showSpeaker }: Voca
           </div>
         </div>
 
-        <div className="flex flex-col items-end gap-1 max-w-[60%]">
-          {item.translation.split(',').map((t, i, arr) => (
-            <span 
-              key={i} 
-              className="text-lg md:text-xl font-normal text-zinc-600 dark:text-white text-right leading-tight break-words text-balance"
+        <div 
+          className="flex flex-col items-end gap-1 max-w-[60%]"
+          onMouseLeave={() => setIsRevealed(false)}
+          onMouseUp={() => setIsRevealed(false)}
+          onTouchEnd={() => setIsRevealed(false)}
+          onTouchCancel={() => setIsRevealed(false)}
+        >
+          {showTranslation || isRevealed ? (
+            item.translation.split(',').map((t, i, arr) => (
+              <span 
+                key={i} 
+                className="text-base md:text-lg font-normal text-zinc-600 dark:text-white text-right leading-tight break-words text-balance select-none"
+              >
+                {t.trim()}{i < arr.length - 1 ? ',' : ''}
+              </span>
+            ))
+          ) : (
+            <button
+              onMouseDown={() => setIsRevealed(true)}
+              onTouchStart={() => setIsRevealed(true)}
+              className="text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer select-none"
+              aria-label="Hold to show translation"
             >
-              {t.trim()}{i < arr.length - 1 ? ',' : ''}
-            </span>
-          ))}
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
