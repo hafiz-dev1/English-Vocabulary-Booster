@@ -70,7 +70,7 @@ export default function VocabularyCard({ item, showExamples, showSpeaker, showTr
             item.translation.split(',').map((t, i, arr) => (
               <span 
                 key={i} 
-                className="text-base md:text-lg font-normal text-zinc-600 dark:text-white text-right leading-tight break-words text-balance select-none"
+                className="text-lg md:text-xl font-normal text-zinc-600 dark:text-white text-right leading-tight break-words text-balance select-none"
               >
                 {t.trim()}{i < arr.length - 1 ? ',' : ''}
               </span>
