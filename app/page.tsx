@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { vocabularyList } from "./data/vocabulary";
 import VocabularyCard from "./components/VocabularyCard";
 import Pagination from "./components/Pagination";
@@ -8,6 +8,7 @@ import Pagination from "./components/Pagination";
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 export default function Home() {
+  const resultsRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -51,8 +52,8 @@ export default function Home() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    if (autoScroll) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    if (autoScroll && resultsRef.current) {
+      resultsRef.current.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -268,7 +269,7 @@ export default function Home() {
         </div>
 
         {/* Results Info & Items Per Page */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <div ref={resultsRef} className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
           <div className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">
             Showing {filteredVocab.length} words
             {selectedLetter && ` starting with "${selectedLetter}"`}
