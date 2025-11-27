@@ -18,7 +18,7 @@ export default function Home() {
   const [showSpeaker, setShowSpeaker] = useState(true);
   const [showTranslation, setShowTranslation] = useState(true);
   const [autoScroll, setAutoScroll] = useState(true);
-  const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [itemsPerPage, setItemsPerPage] = useState(30);
 
   // Refs for scroll preservation
   const prevScrollHeight = useRef(0);
