@@ -8,7 +8,7 @@ import VocabularyCard from "./components/VocabularyCard";
 import Pagination from "./components/Pagination";
 import DateTimeDisplay from "./components/DateTimeDisplay";
 import { useAuth } from "./context/AuthContext";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "./lib/firebase";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
@@ -95,8 +95,9 @@ export default function Home() {
     }
 
     let newFavorites: number[];
+    const isRemoving = favorites.includes(id);
     
-    if (favorites.includes(id)) {
+    if (isRemoving) {
       newFavorites = favorites.filter(favId => favId !== id);
     } else {
       newFavorites = [...favorites, id];
@@ -107,7 +108,11 @@ export default function Home() {
     // Sync with Firestore
     try {
       const userRef = doc(db, "users", user.uid);
-      await setDoc(userRef, { favorites: newFavorites }, { merge: true });
+      if (isRemoving) {
+        await setDoc(userRef, { favorites: arrayRemove(id) }, { merge: true });
+      } else {
+        await setDoc(userRef, { favorites: arrayUnion(id) }, { merge: true });
+      }
     } catch (error) {
       console.error("Error updating favorites in Firestore:", error);
       setNotification({
@@ -244,7 +249,7 @@ export default function Home() {
       <main className="container mx-auto px-4 py-12 max-w-7xl relative">
         
         {/* Auth Button */}
-        <div className="absolute top-6 right-6 z-20">
+        <div className="absolute top-4 right-4 md:top-6 md:right-6 z-20">
           {user ? (
             <div className="group flex items-center gap-3 pl-1.5 pr-4 py-1.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full shadow-sm border border-zinc-200/50 dark:border-zinc-800/50 hover:shadow-lg hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300 ease-out">
               {user.photoURL ? (
