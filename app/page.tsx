@@ -173,9 +173,9 @@ export default function Home() {
 
         {/* Header */}
         <div className="mb-12 text-center space-y-4">
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-linear-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent pb-2">
-            English Vocabulary
-          </h1>
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-linear-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent pb-2">
+            English Vocabulary Booster <span style={{ WebkitTextFillColor: "initial", color: "initial", background: "transparent", display: "inline-block" }}>🚀</span>
+            </h1>
           <p className="text-zinc-500 dark:text-zinc-400 text-lg max-w-2xl mx-auto">
             Master the English language with our curated collection of words.
             Explore, listen, and learn.
