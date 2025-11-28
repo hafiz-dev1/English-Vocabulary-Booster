@@ -2,14 +2,19 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useLayoutEffect } from "react";
+import Image from "next/image";
 import { vocabularyList } from "./data/vocabulary";
 import VocabularyCard from "./components/VocabularyCard";
 import Pagination from "./components/Pagination";
 import DateTimeDisplay from "./components/DateTimeDisplay";
+import { useAuth } from "./context/AuthContext";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "./lib/firebase";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 export default function Home() {
+  const { user, signInWithGoogle, logout } = useAuth();
   const resultsRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
@@ -22,9 +27,18 @@ export default function Home() {
   const [view, setView] = useState<'vocabulary' | 'favorites'>('vocabulary');
   const [favorites, setFavorites] = useState<number[]>([]);
 
+  const [notification, setNotification] = useState<{message: string, type: 'info' | 'error'} | null>(null);
+
   // Refs for scroll preservation
   const prevScrollHeight = useRef(0);
   const prevScrollPos = useRef(0);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   useEffect(() => {
     const savedExamples = localStorage.getItem("showExamples");
@@ -43,20 +57,64 @@ export default function Home() {
     if (savedAutoScroll !== null) {
       setAutoScroll(JSON.parse(savedAutoScroll));
     }
-    const savedFavorites = localStorage.getItem("favorites");
-    if (savedFavorites !== null) {
-      setFavorites(JSON.parse(savedFavorites));
-    }
   }, []);
 
-  const toggleFavorite = (id: number) => {
-    setFavorites(prev => {
-      const newFavorites = prev.includes(id) 
-        ? prev.filter(favId => favId !== id)
-        : [...prev, id];
-      localStorage.setItem("favorites", JSON.stringify(newFavorites));
-      return newFavorites;
-    });
+  // Sync favorites with Firestore when user logs in
+  useEffect(() => {
+    const syncFavorites = async () => {
+      if (!user) {
+        setFavorites([]);
+        return;
+      }
+
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(userRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setFavorites(data.favorites || []);
+        } else {
+          setFavorites([]);
+        }
+      } catch (error) {
+        console.error("Error syncing favorites:", error);
+      }
+    };
+
+    syncFavorites();
+  }, [user]);
+
+  const toggleFavorite = async (id: number) => {
+    if (!user) {
+      setNotification({
+        message: "Please login to save favorites",
+        type: 'info'
+      });
+      return;
+    }
+
+    let newFavorites: number[];
+    
+    if (favorites.includes(id)) {
+      newFavorites = favorites.filter(favId => favId !== id);
+    } else {
+      newFavorites = [...favorites, id];
+    }
+
+    setFavorites(newFavorites);
+
+    // Sync with Firestore
+    try {
+      const userRef = doc(db, "users", user.uid);
+      await setDoc(userRef, { favorites: newFavorites }, { merge: true });
+    } catch (error) {
+      console.error("Error updating favorites in Firestore:", error);
+      setNotification({
+        message: "Failed to save to cloud",
+        type: 'error'
+      });
+    }
   };
 
   const toggleExamples = () => {
@@ -167,8 +225,92 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300">
-      <main className="container mx-auto px-4 py-12 max-w-7xl">
+      {/* Notification Toast */}
+      <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${notification ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+        <div className={`px-6 py-3 rounded-full shadow-lg flex items-center gap-3 ${
+          notification?.type === 'error' 
+            ? 'bg-red-500 text-white' 
+            : 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900'
+        }`}>
+          {notification?.type === 'info' && (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+              <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 0 1 .67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 1 1-.671-1.34l.041-.022ZM12 9a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clipRule="evenodd" />
+            </svg>
+          )}
+          <span className="font-medium text-sm">{notification?.message}</span>
+        </div>
+      </div>
+
+      <main className="container mx-auto px-4 py-12 max-w-7xl relative">
         
+        {/* Auth Button */}
+        <div className="absolute top-6 right-6 z-20">
+          {user ? (
+            <div className="group flex items-center gap-3 pl-1.5 pr-4 py-1.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full shadow-sm border border-zinc-200/50 dark:border-zinc-800/50 hover:shadow-lg hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300 ease-out">
+              {user.photoURL ? (
+                <img 
+                  src={user.photoURL} 
+                  alt={user.displayName || "User"} 
+                  className="w-9 h-9 rounded-full ring-2 ring-white dark:ring-zinc-800 object-cover shadow-sm"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-linear-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                  {user.displayName?.[0] || "U"}
+                </div>
+              )}
+              
+              <div className="flex flex-col hidden sm:flex">
+                <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-100 leading-none">
+                  {user.displayName?.split(' ')[0]}
+                </span>
+                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">
+                  Online
+                </span>
+              </div>
+
+              <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800 mx-1 hidden sm:block"></div>
+
+              <button 
+                onClick={logout}
+                className="text-zinc-400 hover:text-red-500 transition-colors cursor-pointer p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-950/30"
+                title="Logout"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                  <path fillRule="evenodd" d="M16.5 3.75a1.5 1.5 0 0 1 1.5 1.5v13.5a1.5 1.5 0 0 1-1.5 1.5h-6a1.5 1.5 0 0 1-1.5-1.5V15a.75.75 0 0 0-1.5 0v3.75a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V5.25a3 3 0 0 0-3-3h-6a3 3 0 0 0-3 3V9A.75.75 0 1 0 9 9V5.25a1.5 1.5 0 0 1 1.5-1.5h6ZM5.78 8.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 0 0 0 1.06l3 3a.75.75 0 0 0 1.06-1.06l-1.72-1.72H15a.75.75 0 0 0 0-1.5H4.06l1.72-1.72a.75.75 0 0 0 0-1.06Z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={signInWithGoogle}
+              className="group flex items-center gap-3 pl-2 pr-5 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer"
+            >
+              <div className="bg-white p-1.5 rounded-full">
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  />
+                </svg>
+              </div>
+              <span className="text-sm font-semibold tracking-wide">Sign in</span>
+            </button>
+          )}
+        </div>
+
         <DateTimeDisplay />
 
         {/* Header */}

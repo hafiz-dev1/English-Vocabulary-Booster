@@ -56,9 +56,9 @@ export default function VocabularyCard({ item, showExamples, showSpeaker, showTr
   };
 
   return (
-    <div className={`group relative bg-white dark:bg-zinc-900/50 border ${isFavorite ? 'border-pink-500 dark:border-pink-500' : 'border-zinc-200 dark:border-zinc-800'} rounded-xl md:rounded-2xl p-4 py-2.5 md:p-6 hover:shadow-xl hover:border-blue-500/30 dark:hover:border-blue-500/30 transition-all duration-300 flex flex-col h-full`}>
+    <div className={`group relative bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl md:rounded-2xl p-4 py-2.5 md:p-6 hover:shadow-xl hover:border-blue-500/30 dark:hover:border-blue-500/30 transition-all duration-300 flex flex-col h-full`}>
       {/* Main Content: Word, Controls, Translation */}
-      <div className={`flex-1 flex justify-between items-center gap-4 ${showExamples && item.example ? 'pb-2' : ''}`}>
+      <div className={`flex-1 flex justify-between items-center gap-4 ${showExamples && item.example ? 'pb-4' : ''}`}>
         <div className="flex items-center gap-3">
           <h2 
             className="text-lg md:text-xl font-normal uppercase text-zinc-800 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors font-samsung cursor-pointer select-none"
@@ -120,7 +120,7 @@ export default function VocabularyCard({ item, showExamples, showSpeaker, showTr
             item.translation.split(',').map((t, i, arr) => (
               <span 
                 key={i} 
-                className="text-lg md:text-xl font-normal text-zinc-600 dark:text-white text-right leading-tight break-words text-balance select-none"
+                className="text-lg md:text-xl font-normal text-zinc-600 dark:text-white text-right leading-tight wrap-break-word text-balance select-none"
               >
                 {t.trim()}{i < arr.length - 1 ? ',' : ''}
               </span>
