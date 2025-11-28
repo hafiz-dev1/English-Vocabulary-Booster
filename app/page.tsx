@@ -19,6 +19,8 @@ export default function Home() {
   const [showTranslation, setShowTranslation] = useState(true);
   const [autoScroll, setAutoScroll] = useState(true);
   const [itemsPerPage, setItemsPerPage] = useState(30);
+  const [view, setView] = useState<'vocabulary' | 'favorites'>('vocabulary');
+  const [favorites, setFavorites] = useState<number[]>([]);
 
   // Refs for scroll preservation
   const prevScrollHeight = useRef(0);
@@ -41,7 +43,21 @@ export default function Home() {
     if (savedAutoScroll !== null) {
       setAutoScroll(JSON.parse(savedAutoScroll));
     }
+    const savedFavorites = localStorage.getItem("favorites");
+    if (savedFavorites !== null) {
+      setFavorites(JSON.parse(savedFavorites));
+    }
   }, []);
+
+  const toggleFavorite = (id: number) => {
+    setFavorites(prev => {
+      const newFavorites = prev.includes(id) 
+        ? prev.filter(favId => favId !== id)
+        : [...prev, id];
+      localStorage.setItem("favorites", JSON.stringify(newFavorites));
+      return newFavorites;
+    });
+  };
 
   const toggleExamples = () => {
     const newValue = !showExamples;
@@ -105,19 +121,28 @@ export default function Home() {
   };
 
   // Filter logic
-  const filteredVocab = useMemo(() => {
-    return vocabularyList.filter((item) => {
-      const matchesSearch =
-        item.word.toLowerCase().includes(search.toLowerCase()) ||
-        item.translation.toLowerCase().includes(search.toLowerCase());
-      
-      const matchesLetter = selectedLetter
-        ? item.word.toUpperCase().startsWith(selectedLetter)
-        : true;
+    const filteredVocab = useMemo(() => {
+    let filtered = vocabularyList;
 
-      return matchesSearch && matchesLetter;
-    });
-  }, [search, selectedLetter]);
+    if (view === 'favorites') {
+      filtered = filtered.filter(item => favorites.includes(item.id));
+    }
+
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(
+        (item) =>
+          item.word.toLowerCase().includes(searchLower) ||
+          item.translation.toLowerCase().includes(searchLower)
+      );
+    } else if (selectedLetter) {
+      filtered = filtered.filter((item) =>
+        item.word.toUpperCase().startsWith(selectedLetter)
+      );
+    }
+
+    return filtered;
+  }, [search, selectedLetter, view, favorites]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredVocab.length / itemsPerPage);
@@ -155,6 +180,38 @@ export default function Home() {
             Master the English language with our curated collection of words.
             Explore, listen, and learn.
           </p>
+
+          {/* Navigation Menu */}
+          <div className="flex justify-center mt-8">
+            <div className="flex p-1 bg-zinc-100 dark:bg-zinc-800 rounded-xl">
+              <button
+                onClick={() => {
+                  setView('vocabulary');
+                  setCurrentPage(1);
+                }}
+                className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  view === 'vocabulary'
+                    ? 'bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                    : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
+              >
+                Vocabulary
+              </button>
+              <button
+                onClick={() => {
+                  setView('favorites');
+                  setCurrentPage(1);
+                }}
+                className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  view === 'favorites'
+                    ? 'bg-white dark:bg-zinc-700 text-pink-600 dark:text-pink-400 shadow-sm'
+                    : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
+              >
+                Favorites
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Controls Section */}
@@ -390,6 +447,8 @@ export default function Home() {
                 showExamples={showExamples}
                 showSpeaker={showSpeaker}
                 showTranslation={showTranslation}
+                isFavorite={favorites.includes(item.id)}
+                onToggleFavorite={toggleFavorite}
               />
             ))
           ) : (
