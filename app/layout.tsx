@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "English Vocabulary",
+  title: "English Vocabulary Booster",
   description: "A minimalist English-Indonesian vocabulary dictionary.",
 };
 
