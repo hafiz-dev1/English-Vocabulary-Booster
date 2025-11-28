@@ -6,6 +6,7 @@ import {
   signInWithPopup,
   signInWithRedirect,
   signOut, 
+  getRedirectResult,
   User 
 } from "firebase/auth";
 import { auth, googleProvider } from "../lib/firebase";
@@ -41,14 +42,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
-      // Use signInWithRedirect for better mobile support
-      await signInWithRedirect(auth, googleProvider);
+      await signInWithPopup(auth, googleProvider);
     } catch (error) {
       console.error("Error signing in with Google", error);
       const firebaseError = error as { code?: string; message?: string };
       
       if (firebaseError.code === 'auth/configuration-not-found') {
         alert("Error: Google Sign-In is not enabled in your Firebase Console.\n\nPlease go to Firebase Console > Authentication > Sign-in method and enable Google.");
+      } else if (firebaseError.code === 'auth/unauthorized-domain') {
+        alert(`Error: The domain ${window.location.hostname} is not authorized.\n\nPlease go to Firebase Console > Authentication > Settings > Authorized domains and add this domain.`);
       } else if (firebaseError.code === 'auth/popup-closed-by-user') {
         // User closed the popup, no need to alert
       } else {
@@ -60,7 +62,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       await signOut(auth);
-      window.location.reload();
     } catch (error) {
       console.error("Error signing out", error);
     }

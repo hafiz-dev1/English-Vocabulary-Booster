@@ -8,13 +8,13 @@ import VocabularyCard from "./components/VocabularyCard";
 import Pagination from "./components/Pagination";
 import DateTimeDisplay from "./components/DateTimeDisplay";
 import { useAuth } from "./context/AuthContext";
-import { doc, getDoc, setDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, setDoc, arrayUnion, arrayRemove, onSnapshot } from "firebase/firestore";
 import { db } from "./lib/firebase";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 export default function Home() {
-  const { user, signInWithGoogle, logout } = useAuth();
+  const { user, loading, signInWithGoogle, logout } = useAuth();
   const resultsRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
@@ -61,28 +61,24 @@ export default function Home() {
 
   // Sync favorites with Firestore when user logs in
   useEffect(() => {
-    const syncFavorites = async () => {
-      if (!user) {
+    if (!user) {
+      setFavorites([]);
+      return;
+    }
+
+    const userRef = doc(db, "users", user.uid);
+    const unsubscribe = onSnapshot(userRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setFavorites(data.favorites || []);
+      } else {
         setFavorites([]);
-        return;
       }
+    }, (error) => {
+      console.error("Error syncing favorites:", error);
+    });
 
-      try {
-        const userRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(userRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setFavorites(data.favorites || []);
-        } else {
-          setFavorites([]);
-        }
-      } catch (error) {
-        console.error("Error syncing favorites:", error);
-      }
-    };
-
-    syncFavorites();
+    return () => unsubscribe();
   }, [user]);
 
   const toggleFavorite = async (id: number) => {
@@ -246,11 +242,13 @@ export default function Home() {
         </div>
       </div>
 
-      <main className="container mx-auto px-4 py-12 max-w-7xl relative">
+      <main className="container mx-auto px-4 py-6 md:py-12 max-w-7xl relative">
         
         {/* Auth Button */}
-        <div className="absolute top-4 right-4 md:top-6 md:right-6 z-20">
-          {user ? (
+        <div className="flex justify-end mb-6 md:absolute md:top-6 md:right-6 md:mb-0 z-20">
+          {loading ? (
+            <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800 animate-pulse shadow-sm"></div>
+          ) : user ? (
             <div className="group flex items-center gap-3 pl-1.5 pr-4 py-1.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full shadow-sm border border-zinc-200/50 dark:border-zinc-800/50 hover:shadow-lg hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300 ease-out">
               {user.photoURL ? (
                 <img 
