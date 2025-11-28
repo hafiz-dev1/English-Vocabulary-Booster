@@ -87,6 +87,8 @@ export default function Home() {
     return () => unsubscribe();
   }, [user]);
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const toggleFavorite = async (id: number) => {
     if (!user) {
       setNotification({
@@ -103,6 +105,7 @@ export default function Home() {
       : [...favorites, id];
 
     setFavorites(newFavorites);
+    setIsSaving(true);
 
     // Sync with Firestore
     try {
@@ -120,6 +123,8 @@ export default function Home() {
       });
       // Revert optimistic update
       setFavorites(favorites);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -244,6 +249,14 @@ export default function Home() {
             </svg>
           )}
           <span className="font-medium text-sm">{notification?.message}</span>
+        </div>
+      </div>
+
+      {/* Saving Indicator */}
+      <div className={`fixed bottom-4 right-4 z-50 transition-all duration-300 ${isSaving ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+        <div className="bg-white dark:bg-zinc-800 px-4 py-2 rounded-full shadow-lg border border-zinc-200 dark:border-zinc-700 flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
+          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Saving...</span>
         </div>
       </div>
 
