@@ -120,7 +120,7 @@ export default function VocabularyCard({ item, showExamples, showSpeaker, showTr
             item.translation.split(',').map((t, i, arr) => (
               <span 
                 key={i} 
-                className="text-lg md:text-xl font-normal text-zinc-600 dark:text-white text-right leading-tight wrap-break-word text-balance select-none font-samsung"
+                className="text-base md:text-lg font-normal text-zinc-600 dark:text-white text-right leading-tight wrap-break-word text-balance select-none font-samsung"
               >
                 {t.trim()}{i < arr.length - 1 ? ',' : ''}
               </span>
