@@ -56,7 +56,7 @@ export default function VocabularyCard({ item, showExamples, showSpeaker, showTr
   };
 
   return (
-    <div className={`group relative bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl md:rounded-2xl px-5 py-2.5 md:p-6 hover:shadow-xl hover:border-blue-500/30 dark:hover:border-blue-500/30 transition-all duration-300 flex flex-col h-full`}>
+    <div className={`group relative bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl md:rounded-2xl px-4.5 py-2.5 md:p-6 hover:shadow-xl hover:border-blue-500/30 dark:hover:border-blue-500/30 transition-all duration-300 flex flex-col h-full`}>
       {/* Main Content: Word, Controls, Translation */}
       <div className={`flex-1 flex justify-between items-center gap-4 ${showExamples && item.example ? 'pb-3' : ''}`}>
         <div className="flex items-center gap-3">
