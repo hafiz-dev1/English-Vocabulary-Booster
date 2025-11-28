@@ -1,4 +1,4 @@
-# English Vocabulary Booster 🚀
+# English Vocabulary Booster v1.0 🚀
 
 A modern, interactive web application designed to help users master English vocabulary. Built with Next.js, React, Tailwind CSS, and Firebase.
 
